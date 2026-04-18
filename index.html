@@ -6,19 +6,28 @@
     <title>Poop Tracker</title>
     <style>
         :root { --bg: #0f172a; --card: #1e293b; --accent: #fbbf24; --text: #f8fafc; --dim: #64748b; }
-        body { background: var(--bg); color: var(--text); font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 40px 20px; margin: 0; min-height: 100vh; }
-        h1 { color: var(--accent); font-weight: 300; letter-spacing: 2px; text-transform: uppercase; }
-        .counter-box { background: var(--card); padding: 30px; border-radius: 20px; text-align: center; width: 100%; max-width: 300px; margin-top: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
-        .label { font-size: 1.2rem; color: var(--dim); margin-bottom: 15px; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; min-height: 100vh; }
+        h1 { color: var(--accent); font-weight: 300; letter-spacing: 2px; text-transform: uppercase; margin: 10px 0; }
+        
+        .counter-box { background: var(--card); padding: 20px; border-radius: 20px; text-align: center; width: 100%; max-width: 340px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
         .count-display { font-size: 4rem; font-weight: bold; margin: 10px 0; }
-        .widgets { display: flex; justify-content: center; gap: 20px; align-items: center; }
-        .btn { width: 60px; height: 60px; border-radius: 50%; border: none; font-size: 2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.1s; outline: none; }
+        
+        .widgets { display: flex; justify-content: center; gap: 20px; }
+        .btn { width: 60px; height: 60px; border-radius: 50%; border: none; font-size: 2rem; cursor: pointer; transition: transform 0.1s; display: flex; align-items: center; justify-content: center; }
         .minus { background: #334155; color: white; }
         .plus { background: var(--accent); color: var(--bg); }
         .btn:active { transform: scale(0.9); }
-        .history-section { margin-top: 40px; width: 100%; max-width: 300px; text-align: center; }
-        input[type="date"] { background: var(--card); border: 1px solid var(--dim); color: var(--text); padding: 10px; border-radius: 8px; width: 100%; box-sizing: border-box; margin-top: 10px; font-size: 16px; color-scheme: dark; }
-        #historyResult { margin-top: 15px; font-size: 1.1rem; color: var(--accent); font-weight: bold; }
+
+        /* Calendar Styles */
+        .calendar-container { width: 100%; max-width: 340px; margin-top: 30px; background: var(--card); padding: 15px; border-radius: 20px; box-sizing: border-box; }
+        .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-weight: bold; color: var(--accent); }
+        .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+        .day-label { font-size: 0.7rem; color: var(--dim); text-align: center; margin-bottom: 5px; text-transform: uppercase; }
+        .day { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.8rem; border-radius: 8px; background: rgba(255,255,255,0.03); position: relative; }
+        .day.today { border: 1px solid var(--accent); }
+        .day-num { font-size: 0.6rem; color: var(--dim); position: absolute; top: 4px; left: 4px; }
+        .count-val { font-weight: bold; font-size: 1rem; color: var(--text); }
+        .has-data { background: rgba(251, 191, 36, 0.1); }
     </style>
 </head>
 <body>
@@ -26,7 +35,7 @@
     <h1>Tracker</h1>
 
     <div class="counter-box">
-        <div class="label">Poops Today</div>
+        <div style="font-size: 1.1rem; color: var(--dim);">Poops Today</div>
         <div class="count-display" id="countDisplay">0</div>
         <div class="widgets">
             <button class="btn minus" onclick="changeCount(-1)">-</button>
@@ -34,51 +43,81 @@
         </div>
     </div>
 
-    <div class="history-section">
-        <div class="label" style="font-size: 0.9rem;">Check History</div>
-        <input type="date" id="historyPicker">
-        <div id="historyResult"></div>
+    <div class="calendar-container">
+        <div class="cal-header">
+            <span id="monthYear">Month Year</span>
+        </div>
+        <div class="grid" id="calendarGrid">
+            <div class="day-label">S</div><div class="day-label">M</div><div class="day-label">T</div>
+            <div class="day-label">W</div><div class="day-label">T</div><div class="day-label">F</div><div class="day-label">S</div>
+            </div>
     </div>
 
     <script>
-        const getTodayKey = () => new Date().toLocaleDateString('en-CA'); // Format: YYYY-MM-DD
-        
-        const countDisplay = document.getElementById('countDisplay');
-        const historyPicker = document.getElementById('historyPicker');
-        const historyResult = document.getElementById('historyResult');
-
+        const getTodayKey = () => new Date().toLocaleDateString('en-CA');
         let history = JSON.parse(localStorage.getItem('poopHistory')) || {};
-        
-        // Setup initial date
-        historyPicker.value = getTodayKey();
 
         function updateUI() {
             const today = getTodayKey();
             if (history[today] === undefined) history[today] = 0;
             
-            // Update the big number
-            countDisplay.innerText = history[today];
-            
-            // Save to storage
+            document.getElementById('countDisplay').innerText = history[today];
             localStorage.setItem('poopHistory', JSON.stringify(history));
-            
-            // Update the history text below
-            const selectedDate = historyPicker.value;
-            const count = history[selectedDate] || 0;
-            historyResult.innerText = `Record: ${count} poops`;
+            renderCalendar();
         }
 
         window.changeCount = function(val) {
             const today = getTodayKey();
             if (history[today] === undefined) history[today] = 0;
-            
             history[today] = Math.max(0, history[today] + val);
             updateUI();
         };
 
-        historyPicker.addEventListener('change', updateUI);
+        function renderCalendar() {
+            const grid = document.getElementById('calendarGrid');
+            const monthYearLabel = document.getElementById('monthYear');
+            
+            // Clear previous days (keep only labels)
+            const labels = grid.querySelectorAll('.day-label');
+            grid.innerHTML = '';
+            labels.forEach(l => grid.appendChild(l));
 
-        // Initial render
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth();
+            
+            monthYearLabel.innerText = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const todayStr = getTodayKey();
+
+            // Padding for start of month
+            for (let i = 0; i < firstDay; i++) {
+                const empty = document.createElement('div');
+                grid.appendChild(empty);
+            }
+
+            // Actual days
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dayDiv = document.createElement('div');
+                dayDiv.className = 'day';
+                
+                // Format date as YYYY-MM-DD for lookup
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                const count = history[dateStr] || 0;
+
+                if (dateStr === todayStr) dayDiv.classList.add('today');
+                if (count > 0) dayDiv.classList.add('has-data');
+
+                dayDiv.innerHTML = `
+                    <span class="day-num">${d}</span>
+                    <span class="count-val">${count > 0 ? count : ''}</span>
+                `;
+                grid.appendChild(dayDiv);
+            }
+        }
+
         updateUI();
     </script>
 </body>
