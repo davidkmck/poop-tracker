@@ -44,37 +44,44 @@
     </div>
 
     <script>
-        // Use local time date string as the key (e.g., "2026-04-18")
-        const getTodayKey = () => new Date().toISOString().split('T')[0];
+<script>
+    // Use local time date string as the key (e.g., "2026-04-18")
+    const getTodayKey = () => new Date().toISOString().split('T')[0];
+    
+    let history = JSON.parse(localStorage.getItem('poopHistory')) || {};
+    let todayKey = getTodayKey();
+
+    function updateUI() {
+        // Ensure entry for today exists
+        if (!history[todayKey]) history[todayKey] = 0;
         
-        let history = JSON.parse(localStorage.getItem('poopHistory')) || {};
-        let todayKey = getTodayKey();
-
-        function updateUI() {
-            // Ensure entry for today exists
-            if (!history[todayKey]) history[todayKey] = 0;
-            document.getElementById('countDisplay').innerText = history[todayKey];
-            localStorage.setItem('poopHistory', JSON.stringify(history));
-        }
-
-        function changeCount(val) {
-            todayKey = getTodayKey(); // Refresh key in case it's past midnight
-            if (!history[todayKey]) history[todayKey] = 0;
-            
-            history[todayKey] = Math.max(0, history[todayKey] + val);
-            updateUI();
-        }
-
-        function checkHistory() {
-            const pickedDate = document.getElementById('historyPicker').value;
-            const count = history[pickedDate] || 0;
-            document.getElementById('historyResult').innerText = `Record: ${count} poops`;
-        }
-
-        // Set the picker to today by default
-        document.getElementById('historyPicker').value = todayKey;
+        document.getElementById('countDisplay').innerText = history[todayKey];
+        localStorage.setItem('poopHistory', JSON.stringify(history));
         
+        // Sync the "Record" text automatically
+        checkHistory();
+    }
+
+    function changeCount(val) {
+        todayKey = getTodayKey(); // Refresh key in case it's past midnight
+        if (!history[todayKey]) history[todayKey] = 0;
+        
+        history[todayKey] = Math.max(0, history[todayKey] + val);
         updateUI();
-    </script>
+    }
+
+    function checkHistory() {
+        const pickedDate = document.getElementById('historyPicker').value;
+        const count = history[pickedDate] || 0;
+        document.getElementById('historyResult').innerText = `Record: ${count} poops`;
+    }
+
+    // Set the picker to today by default
+    document.getElementById('historyPicker').value = todayKey;
+    
+    // Initial load
+    updateUI();
+</script>
+  
 </body>
 </html>
