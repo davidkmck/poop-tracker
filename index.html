@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Poop Tracker</title>
+    <style>
+        :root { --bg: #0f172a; --card: #1e293b; --accent: #fbbf24; --text: #f8fafc; --dim: #64748b; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 40px 20px; margin: 0; min-height: 100vh; }
+        h1 { color: var(--accent); font-weight: 300; letter-spacing: 2px; text-transform: uppercase; }
+        
+        .counter-box { background: var(--card); padding: 30px; border-radius: 20px; text-align: center; width: 100%; max-width: 300px; margin-top: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
+        .label { font-size: 1.2rem; color: var(--dim); margin-bottom: 15px; }
+        .count-display { font-size: 4rem; font-weight: bold; margin: 10px 0; }
+        
+        .widgets { display: flex; justify-content: center; gap: 20px; align-items: center; }
+        .btn { width: 60px; height: 60px; border-radius: 50%; border: none; font-size: 2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.1s; }
+        .minus { background: #334155; color: white; }
+        .plus { background: var(--accent); color: var(--bg); }
+        .btn:active { transform: scale(0.9); }
+
+        .history-section { margin-top: 40px; width: 100%; max-width: 300px; text-align: center; }
+        input[type="date"] { background: var(--card); border: 1px solid var(--dim); color: var(--text); padding: 10px; border-radius: 8px; width: 100%; box-sizing: border-box; margin-top: 10px; font-size: 1rem; }
+        #historyResult { margin-top: 15px; font-size: 1.1rem; color: var(--accent); font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h1>Tracker</h1>
+
+    <div class="counter-box">
+        <div class="label">Poops Today</div>
+        <div class="count-display" id="countDisplay">0</div>
+        <div class="widgets">
+            <button class="btn minus" onclick="changeCount(-1)">-</button>
+            <button class="btn plus" onclick="changeCount(1)">+</button>
+        </div>
+    </div>
+
+    <div class="history-section">
+        <div class="label" style="font-size: 0.9rem;">Check History</div>
+        <input type="date" id="historyPicker" onchange="checkHistory()">
+        <div id="historyResult"></div>
+    </div>
+
+    <script>
+        // Use local time date string as the key (e.g., "2026-04-18")
+        const getTodayKey = () => new Date().toISOString().split('T')[0];
+        
+        let history = JSON.parse(localStorage.getItem('poopHistory')) || {};
+        let todayKey = getTodayKey();
+
+        function updateUI() {
+            // Ensure entry for today exists
+            if (!history[todayKey]) history[todayKey] = 0;
+            document.getElementById('countDisplay').innerText = history[todayKey];
+            localStorage.setItem('poopHistory', JSON.stringify(history));
+        }
+
+        function changeCount(val) {
+            todayKey = getTodayKey(); // Refresh key in case it's past midnight
+            if (!history[todayKey]) history[todayKey] = 0;
+            
+            history[todayKey] = Math.max(0, history[todayKey] + val);
+            updateUI();
+        }
+
+        function checkHistory() {
+            const pickedDate = document.getElementById('historyPicker').value;
+            const count = history[pickedDate] || 0;
+            document.getElementById('historyResult').innerText = `Record: ${count} poops`;
+        }
+
+        // Set the picker to today by default
+        document.getElementById('historyPicker').value = todayKey;
+        
+        updateUI();
+    </script>
+</body>
+</html>
